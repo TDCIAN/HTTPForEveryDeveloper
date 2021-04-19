@@ -484,7 +484,232 @@ based on this lecture:
   
 
 ### 9. HTTP 메서드 활용
+- 클라이언트에서 서버로 데이터 전송
+  - 데이터 전달 방식은 크게 2가지
+    - 쿼리 파라미터를 통한 데이터 전송
+      - GET
+      - 주로 정렬 필터(검색어)
+
+    - 메시지 바디를 통한 데이터 전송
+      - POST, PUT, PATCH
+      - 회원 가입, 상품 주문, 리소스 등록, 리소스 변경
+
+  - 4가지 상황
+    - 정적 데이터 조회
+      - 이미지, 정적 텍스트 문서
+      - 조회는 GET 사용
+      - 정적 데이터는 일반적으로 쿼리 파라미터 없이 리소스 경로로 단순하게 조회 가능
+      
+    - 동적 데이터 조회
+      - 주로 검색, 게시판 목록에서 정렬 필터(검색어)
+      - 조회 조건을 줄여주는 필터, 조회 결과를 정렬하는 정렬 조건에 주로 사용
+      - 조회는 GET 사용
+      - GET은 쿼리 파라미터 사용해서 데이터를 전달
+
+    - HTML Form을 통한 데이터 전송
+      - 회원 가입, 상품 주문, 데이터 변경
+      - POST 전송 - 저장
+      - HTML Form submit시 POST 전송
+        - 예) 회원 가입, 상품 주문, 데이터 변경
+      - Content-Type: application/x-www-form-urlencoded 사용
+        - form의 내용을 메시지 바디를 통해서 전송(key = value, 쿼리 파라미터 형식)
+        - 전송 데이터를 url encoding 처리
+          - 예) abc김 -> abc%EA%B9%80
+      - HTML Form은 GET 전송도 가능
+      - Content-Type: multipart/form-data
+        - 파일 업로드 같은 바이너리 데이터 전송시 사용
+        - 다른 종류의 여러 파일과 폼의 내용 함께 전송 가능(그래서 이름이 multipart)
+      - 참고: HTML Form 전송은 GET, POST만 지원 -> PUT, DELETE는 다 안 된다
+
+    - HTTP API를 통한 데이터 전송
+      - 회원 가입, 상품 주문, 데이터 변경
+      - 서버 to 서버
+        - 백엔드 시스템 통신
+      - 앱 클라이언트
+        - 아이폰, 안드로이드
+      - 웹 클라이언트(Ajax)
+        - HTML에서 Form 전송 대신 자바 스크립트를 통한 통신에 사용(AJAX)
+        - 예) React, VueJS 같은 웹 클라이언트와 API 통신
+      - POST, PUT, PATCH: 메시지 바디를 통해 데이터 전송
+      - GET: 조회, 쿼리 파라미터로 데이터 전달
+      - Content-Type: application/json을 주로 사용 (사실상 표준)
+        - TEXT, XML, JSON 등등
+
+- HTTP API 설계 예시
+  - HTTP API -> POST 기반의 컬렉션 방식
+    - POST 기반 등록
+    - 예) 회원 관리 API 제공
+
+  - HTTP API -> PUT 기반의 스토어 방식
+    - PUT 기반 등록
+    - 예) 정적 컨텐츠 관리, 원격 파일 관리
+
+  - HTML FORM 사용
+    - 웹 페이지 회원 관리
+    - GET, POST만 지원
+
+  - 회원 관리 시스템 예시
+    - POST - 신규 자원 등록 특징
+      - 클라이언트는 등록될 리소스의 URI를 모른다.
+        - 회원 등록 /members -> POST
+        - POST /members
+
+      - 서버가 새로 등록된 리소스 URI를 생성해준다.
+        - HTTP/1.1 201 Created
+        - Location: /members/100
+
+      - 컬렉션(Collection)
+        - 서버가 관리하는 리소스 디렉토리
+        - 서버가 리소스의 URI를 생성하고 관리
+        - 여기서 컬렉션은 /members
+
+  - 파일 관리 시스템 예시
+    - API 설계 - PUT 기반 등록
+      - 파일 목록 /files -> GET
+      - 파일 조회 /files/{filename} -> GET
+      - 파일 등록 /files/{filename} -> PUT
+      - 파일 삭제 /files/{filename} -> DELETE
+      - 파일 대량 등록 /files -> POST
+
+    - PUT - 신규 자원 등록 특징
+      - 클라이언트가 리소스 URI를 알고 있어야 한다.
+        - 파일 등록 /files/{filename} -> PUT
+        - PUT /files/star.jpg -> star.jpg를 클라이언트가 알고 등록하는 것이다
+
+      - 클라이언트가 직접 리소스의 URI를 지정한다.
+
+      - 스토어(Store) 방식
+        - 클라이언트가 관리하는 리소스 저장소
+        - 클라이언트가 리소스의 URI를 알고 관리
+        - 여기서 스토어는 /files
+
+    - 대부분 실무에서는 POST 기반의 컬렉션 방식을 많이 사용한다
+
+  - HTML FORM 사용
+    - HTML FORM은 GET, POST만 지원 -> 컨트롤 URL
+      - 컨트롤 URI
+        - GET, POST만 지원하므로 제약이 있음
+        - 이런 제약을 해결하기 위해 동사로 된 리소스 경로 사용
+        - POST의 /new, /edit, /delete가 컨트롤 URI
+        - HTTP 메서드로 해결하기 애매한 경우 사용(HTTP API 포함)
+      - 회원 목록 /members -> GET
+      - 회원 등록 폼 /members/new -> GET
+      - 회원 등록 /members/new, /members -> POST
+      - 회원 조회 /members/{id} -> GET
+      - 회원 수정 폼 /members/{id}/edit -> GET
+      - 회원 수정 /members/{id}/edit, /members/{id} -> POST
+      - 회원 삭제 /members/{id}/delete -> POST
+
+    - AJAX 같은 기술을 사용해서 해결 가능 -> 회원 API 참고
+    - 여기서는 순수 HTML, HTML FORM 이야기
+    - GET, POST만 지원하므로 제약이 있음
+
+  - 정리: 참고하면 좋은 URI 설계 개념
+    - 문서(document)
+      - 단일 개념(파일 하나, 객체 인스턴스, 데이터베이스 row)
+      - 예) /members/100, /files/star.jpg
+
+    - 컬렉션(collection)
+      - 서버가 관리하는 리소스 디렉터리
+      - 서버가 리소스의 URI를 생성하고 관리
+      - 예) /members
+
+    - 스토어(store)
+      - 클라이언트가 관리하는 자원 저장소
+      - 클라이언트가 리소스의 URI를 알고 관리
+      - 예) /files
+
+    - 컨트롤러(controller), 컨트롤 URI
+      - 문서, 컬렉션, 스토어로 해결하기 어려운 추가 프로세스 실행
+      - 동사를 직접 사용
+      - 예) /members/{id}/delete
+
+    - 참고할만한 사이트(좋은 practice가 많다): https://restfulapi.net/resource-naming
+
 ### 10. HTTP 상태코드
+상태 코드
+- 클라이언트가 보낸 요청의 처리 상태를 응답에서 알려주는 기능
+  - 1xx(informational): 요청이 수신되어 처리중
+  - 2xx(Successful): 요청 정상 처리
+  - 3xx(Redirection): 요청을 완료하려면 추가 행동이 필요
+  - 4xx(Client Error): 클라이언트 오류, 잘못된 문법등으로 서버가 요청을 수행할 수 없음
+  - 5xx(Server Error): 서버 오류, 서버가 정상 요청을 처리하지 못함
+
+- 만약 모르는 상태 코드가 나타나면?
+  - 클라이언트가 인식할 수 없는 상태코드를 서버가 반환하면?
+  - 클라이언트는 상위 상태코드로 해석해서 처리
+  - 미래에 새로운 상태 코드가 추가되어도 클라이언트를 변경하지 않아도 됨
+  - 예)
+    - 299 ??? -> 2xx (Successful)
+    - 451 ??? -> 4xx (Client Error)
+    - 599 ??? -> 5xx (Server Error)
+
+- 2xx (Successful)
+  - 클라이언트의 요청을 성공적으로 처리
+
+  - 200 OK: 요청 성공
+
+  - 201 Created: 요청 성공해서 새로운 리소스가 생성됨
+    요청
+    POST /members HTTP/1.1
+    Content-Type: application/json
+    {
+      "username": "young",
+      "age": 20
+    }
+    응답 - 생성된 리소스는 응답의 Location 헤더 필드로 식별
+    HTTP/1.1 201 Created
+    Content-Type: application/json
+    Content Length: 34
+    Location: /members/100
+    {
+      "username": "young",
+      "age": 20
+    }
+    
+  - 202 Accepted: 요청이 접수되었으나 처리가 완료되지 않았음
+    - 배치 처리 같은 곳에서 사용
+    - 예) 요청 접수 후 1시간 뒤에 배치 프로세스가 요청을 처리함
+
+  - 204 No Content: 서버가 요청을 성공적으로 수행했지만, 응답 페이로드 본문에 보낼 데이터가 없음
+    - 예) 웹 문서 편집기에서 save 버튼
+    - save 버튼의 결과로 아무 내용이 없어도 된다.
+    - save 버튼을 눌러도 같은 화면을 유지해야 한다.
+    - 결과 내용이 없어도 204 메시지(2xx)만으로 성공을 인식할 수 있다.
+  
+
+  - 3xx (Redirection): 요청을 완료하기 위해 유저 에이전트의 추가 조치 필요
+  - 리다이렉션 이해
+    - 웹 브라우저는 3xx 응답의 결과에 Location 헤더가 있으면, Location 위치로 자동 이동(리다이렉트)
+    - 리다이렉션 종류
+      - 영구 리다이렉션: 특정 리소스의 URI가 영구적으로 이동
+        - 예) /members -> /users
+        - 예) /event -> /new-event
+        - 영구 리다이렉션: 301과 308이 있음
+          - 리소스의 URI가 영구적으로 이동
+          - 원래의 URL을 사용하지 않게 됨, 검색 엔진 등에서도 변경 인지
+          - 301 Moved Permanently
+            - 리다이렉트시 요청 메서드가 GET으로 변하고, 본문이 제거될 수 있음(거의 제거 된다)
+          - 308 Permanent Redirect
+            - 301과 기능은 같음
+            - 리다이렉트시 요청 메서드와 본문 유지
+            - 실무에서 308은 잘 쓰지 않음
+
+      - 일시 리다이렉션: 일시적인 변경 
+        - 주문 완료 후 주문 내역 화면으로 이동
+        - PRG: Post/Redirect/Get
+      - 특수 리다이렉션
+        - 결과 대신 캐시를 사용
+
+    - 300 Multiple Choices
+    - 301 Moved Permanently
+    - 302 Found
+    - 303 See Other
+    - 304 Not Modified
+    - 307 Temporary Redirect
+    - 308 Permanent Redirect
+
+
 ### 11. HTTP 헤더1 - 일반 헤더
 ### 12. HTTP 헤더2 - 캐시와 조건부 요청
 
