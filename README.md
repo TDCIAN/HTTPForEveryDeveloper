@@ -1262,11 +1262,78 @@ HTTP 헤더의 용도
 
 
 캐시와 조건부 요청 헤더
-- 캐시
+
+- 캐시 제어 헤더
+  - Cache-Control: 캐시 제어 -> 가장 중요
+    - 캐시 지시어(directives)
+      - Cache-Control: max-age
+        - 캐시 유효 시간, 초 단위
+      - Cache-Control: no-cache
+        - 데이터는 캐시해도 되지만, 항상 원(origin) 서버에 검증하고 사용
+      - Cache-Control: no-store
+        - 데이터에 민감한 정보가 있으므로 저장하면 안됨
+          (메모리에서 사용하고 최대한 빨리 삭제)
+          
+  - Pragma: 캐시 제어(하위 호환)
+    - Pragma: no-cache
+    - HTTP 1.0 하위 호환 -> 지금은 거의 사용하지 않음
+
+  - Expires: 캐시 유효 기간(하위 호환)
+    - 캐시 만료일 지정(하위 호환)
+    - expires: Mon, 01 Jan 1990 00:00:00 GMT
+    - 캐시 만료일을 정확한 날짜로 지정
+    - HTTP 1.0 부터 사용
+    - 지금은 더 유연한 Cache-Control: max-age 권장
+    - Cache-Control: max-age와 함께 사용하면 Expires는 무시
+  
+- 검증 헤더와 조건부 요청 헤더
+  - 검증 헤더(Validator)
+    - ETag: "v1.0", ETag: "asid93jkrh2l"
+    - Last-Modified: Thu, 04 Jun 2020 07:19:24 GMT
+
+  - 조건부 요청 헤더
+    - If-Match, If-None-Match: ETag 값 사용
+    - If-Modified-Since, If-Unmodified-Since: Last-Modified 값 사용
+
 
 프록시 캐시
+  - Cache-Control
+    캐시 지시어(directives) - 기타
+    - Cache-Control: public
+      - 응답이 public 캐시에 저장되어도 됨
+    - Cache-Control: private
+      - 응답이 해당 사용자만을 위한 것임, private 캐시에 저장해야 함(기본값)
+    - Cache-Control: s-maxage
+      - 프록시 캐시에만 적용되는 max-age
+    - Age: 60 (HTTP 헤더)
+      - 오리진 서버에서 응답 후 프록시 캐시 내에 머문 시간(초)
 
 캐시 무효화
-     
-        
+  - Cache-Control
+    확실한 캐시 무효화 응답
+    - Cache-Control: no-cache, no-store, must-revalidate
+      - 사용자의 통장 잔고 등 수시로 업데이트 될 수 있는 내용들은 캐시가 되면 안 된다
+      - no-cache(캐시 지시어)
+        - 데이터는 캐시해도 되지만, 항상 원 서버에 검증하고 사용(이름에 주의!)
 
+      - no-store(캐시 지시어)
+        - 데이터에 민감한 정보가 있으므로 저장하면 안됨(메모리에서 사용하고 최대한 빨리 삭제
+
+      - must-revalidate(캐시 지시어)
+        - 캐시 만료후 최초 조회시 원 서버에 검증해야함
+        - 원 서버 접근 실패시 반드시 오류가 발생해야함 - 504(Gateway Timeout)
+        - must-revalidate는 캐시 유효 시간이라면 캐시를 사용함
+        
+    - Pragma: no-cache
+      - HTTP 1.0 하위 호환
+        
+  - no-cache vs must-validate
+    - no-cache
+      1. 캐시 서버 요청: no-cache + ETag
+      2. 원 서버에 접근할 수 없는 경우(순간 네트워크 단절 등의 오류 발생) 캐시 서버 설정에 따라서 캐시 데이터를 반환할 수 있음
+        - Error or 200 OK -> 오류보다는 오래된 데이터라도 보여주자
+
+    - must-validate
+      1. 캐시 서버 요청: must-revalidate + ETag
+      2. 원 서버에 접근할 수 없는 경우(순간 네트워크 단절 등의 오류 발생) 항상 오류가 발생해야 함
+        - 504 Gateway Timeout -> 매우 중요한 돈과 관련된 결과로 생각해보자
